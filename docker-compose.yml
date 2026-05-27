@@ -1,0 +1,221 @@
+
+services:
+  # =========================================================================
+  # 1. HỆ QUẢN TRỊ CƠ SỞ DỮ LIỆU POSTGRESQL (Chứa 3 database logic)
+  # =========================================================================
+  ecommerce-postgres:
+    image: postgres:16-alpine
+    container_name: ecommerce-postgres
+    restart: always
+    ports:
+      - "5433:5432" # Thông cổng 5432 nội bộ ra cổng 5433 của máy thực
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: yoursecurepassword # Mật khẩu gốc của Postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Giữ lại dữ liệu không bị mất khi tắt container
+      - ./databases:/docker-entrypoint-initdb.d:ro # Thư mục chứa script tự động tạo 3 DB logic
+    networks:
+      - ptit-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # =========================================================================
+  # 2. TRẠM TRUNG CHUYỂN THÔNG ĐIỆP RABBITMQ
+  # =========================================================================
+  ecommerce-rabbitmq:
+    image: rabbitmq:3-management-alpine # Phiên bản có sẵn giao diện đồ họa Web UI
+    container_name: ecommerce-rabbitmq
+    restart: always
+    ports:
+      - "5672:5672" # Cổng kết nối chính để code Spring Boot gửi/nhận message (AMQP)
+      - "15672:15672" # Cổng hiển thị giao diện quản trị trên Web Browser
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - ptit-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # =========================================================================
+  # 3. USER & IDENTITY SERVICE (Spring Boot - Cổng 8081)
+  # =========================================================================
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: user-service
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://ecommerce-postgres:5432/user_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=yoursecurepassword
+      - SPRING_RABBITMQ_HOST=ecommerce-rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=guest
+      - SPRING_RABBITMQ_PASSWORD=guest
+    depends_on:
+      ecommerce-postgres:
+        condition: service_healthy
+      ecommerce-rabbitmq:
+        condition: service_healthy
+    networks:
+      - ptit-network
+
+  # =========================================================================
+  # 4. PRODUCT & INVENTORY SERVICE (Spring Boot - Cổng 8082)
+  # =========================================================================
+  product-service:
+    build:
+      context: ./product-service
+      dockerfile: Dockerfile
+    container_name: product-service
+    restart: always
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://ecommerce-postgres:5432/product_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=yoursecurepassword
+      - SPRING_RABBITMQ_HOST=ecommerce-rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=guest
+      - SPRING_RABBITMQ_PASSWORD=guest
+    depends_on:
+      ecommerce-postgres:
+        condition: service_healthy
+      ecommerce-rabbitmq:
+        condition: service_healthy
+    networks:
+      - ptit-network
+
+  # =========================================================================
+  # 5. ORDER SERVICE (Spring Boot - Cổng 8083)
+  # =========================================================================
+  order-service:
+    build:
+      context: ./order-service
+      dockerfile: Dockerfile
+    container_name: order-service
+    restart: always
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://ecommerce-postgres:5432/order_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=yoursecurepassword
+      - SPRING_RABBITMQ_HOST=ecommerce-rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=guest
+      - SPRING_RABBITMQ_PASSWORD=guest
+      - PRODUCT_SERVICE_URL=http://product-service:8082
+    depends_on:
+      ecommerce-postgres:
+        condition: service_healthy
+      ecommerce-rabbitmq:
+        condition: service_healthy
+    networks:
+      - ptit-network
+
+  # =========================================================================
+  # 6. NOTIFICATION SERVICE (Spring Boot - Chạy nội bộ)
+  # =========================================================================
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    container_name: notification-service
+    restart: always
+    environment:
+      - SPRING_RABBITMQ_HOST=ecommerce-rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=guest
+      - SPRING_RABBITMQ_PASSWORD=guest
+      - USER_SERVICE_URL=http://user-service:8081
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+    depends_on:
+      ecommerce-rabbitmq:
+        condition: service_healthy
+    networks:
+      - ptit-network
+
+  # =========================================================================
+  # REDIS (Memory Cache & Rate Limiting & Token Blacklist)
+  # =========================================================================
+  ecommerce-redis:
+    image: redis:7-alpine
+    container_name: ecommerce-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ptit-network
+
+  # =========================================================================
+  # 7. API GATEWAY (Spring Cloud Gateway - Cổng 8080)
+  # =========================================================================
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      - USER_SERVICE_URL=http://user-service:8081
+      - PRODUCT_SERVICE_URL=http://product-service:8082
+      - ORDER_SERVICE_URL=http://order-service:8083
+      - REDIS_HOST=ecommerce-redis
+      - REDIS_PORT=6379
+    depends_on:
+      - user-service
+      - product-service
+      - order-service
+      - ecommerce-redis
+    networks:
+      - ptit-network
+
+  # =========================================================================
+  # 8. FRONTEND WEB APPLICATION (Next.js - Cổng 3000)
+  # =========================================================================
+  frontend-web:
+    build:
+      context: ./frontend-web
+      dockerfile: Dockerfile
+    container_name: frontend-web
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
+    depends_on:
+      - api-gateway
+    networks:
+      - ptit-network
+
+# =========================================================================
+# ĐỊNH NGHĨA VÙNG LƯU TRỮ & MẠNG NỘI BỘ
+# =========================================================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  ptit-network:
+    driver: bridge

@@ -1,0 +1,93 @@
+# =========================================================================
+# 1. IDE & Editors (IntelliJ IDEA, VS Code, Eclipse, NetBeans)
+# =========================================================================
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.classpath
+.project
+.settings/
+bin/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*.swo
+
+# =========================================================================
+# 2. Operating System Files (Windows, macOS)
+# =========================================================================
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# =========================================================================
+# 3. Environment Variables & Credentials (CRITICAL for Security)
+# =========================================================================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+*.key
+*.p12
+
+# =========================================================================
+# 4. Java & Spring Boot (Maven Build Outputs)
+# =========================================================================
+**/target/
+**/*.jar
+**/*.war
+**/*.ear
+**/*.zip
+**/*.tar.gz
+**/*.rar
+**/pom.xml.tag
+**/pom.xml.releaseBackup
+**/pom.xml.next
+**/release.properties
+**/dependency-reduced-pom.xml
+**/buildNumber.properties
+**/.mvn/timing.properties
+**/.mvn/wrapper/maven-wrapper.jar
+
+# =========================================================================
+# 5. Node.js & Next.js (Frontend Web Build Outputs)
+# =========================================================================
+**/node_modules/
+**/bower_components/
+**/.next/
+**/out/
+**/build/
+**/dist/
+**/.eslintcache
+**/.stylelintcache
+**/*.tsbuildinfo
+**/next-env.d.ts
+
+# =========================================================================
+# 6. Log Files & Temp Directories
+# =========================================================================
+*.log
+**/logs/
+**/tmp/
+**/temp/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =========================================================================
+# 7. Docker and Database data (if any are stored locally in the directory)
+# =========================================================================
+**/.docker/
+**/postgres_data/
+**/redis_data/

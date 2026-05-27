@@ -1,0 +1,9 @@
+node_modules
+.next
+out
+build
+.git
+.gitignore
+*.tsbuildinfo
+Dockerfile
+README.md
