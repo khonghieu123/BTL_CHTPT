@@ -28,6 +28,10 @@ public class User {
     @Column(nullable = false)
     private String role; // e.g., "ROLE_USER", "ROLE_ADMIN"
 
+    @Column(nullable = false, defaultValue = "ACTIVE")
+    @Builder.Default
+    private String status = "ACTIVE"; // e.g., "ACTIVE", "SUSPENDED"
+
     @Column(name = "full_name")
     private String fullName;
 
@@ -36,3 +40,4 @@ public class User {
     @Column(columnDefinition = "TEXT")
     private String address;
 }
+

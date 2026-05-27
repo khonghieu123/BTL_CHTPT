@@ -105,9 +105,9 @@ export default function AdminProductsPage() {
     setEditingProduct(prod);
     setName(prod.name);
     setPrice(prod.price.toString());
-    setStock(prod.stock.toString());
-    setCategory(prod.category);
-    setDesc(prod.description);
+    setStock((prod.stockQuantity ?? prod.stock ?? 0).toString());
+    setCategory(prod.category || "Audio");
+    setDesc(prod.description || "");
     setImgUrl(prod.imageUrl || "");
     setIsModalOpen(true);
   };
@@ -135,7 +135,7 @@ export default function AdminProductsPage() {
     const payload = {
       name,
       price: priceNum,
-      stock: stockNum,
+      stockQuantity: stockNum,
       category,
       description: desc,
       imageUrl: imgUrl.trim(),
@@ -144,7 +144,7 @@ export default function AdminProductsPage() {
 
     try {
       if (editingProduct) {
-        await apiCall("put", "/products", payload);
+        await apiCall("put", `/products/${editingProduct.id}`, payload);
         toast.success(`Đã cập nhật sản phẩm: ${name}`);
       } else {
         await apiCall("post", "/products", payload);
@@ -308,11 +308,11 @@ export default function AdminProductsPage() {
                     
                     <TableCell className="text-center">
                       <span className={`px-2.5 py-0.5 rounded-lg text-[9px] font-bold uppercase ${
-                        prod.stock <= 5 
+                        (prod.stockQuantity ?? prod.stock ?? 0) <= 5 
                           ? "bg-red-500/10 text-red-400 border border-red-500/20 animate-pulse font-black" 
                           : "bg-zinc-800/60 text-zinc-400 border border-zinc-700/50"
                       }`}>
-                        {prod.stock} chiếc
+                        {prod.stockQuantity ?? prod.stock ?? 0} chiếc
                       </span>
                     </TableCell>
                     

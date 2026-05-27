@@ -68,6 +68,7 @@ public class AuthController {
                             .fullName(user.getFullName() != null ? user.getFullName() : "")
                             .phone(user.getPhone() != null ? user.getPhone() : "")
                             .address(user.getAddress() != null ? user.getAddress() : "")
+                            .status(user.getStatus())
                             .build())
                     .collect(java.util.stream.Collectors.toList());
             return ResponseEntity.ok(responses);
@@ -88,6 +89,7 @@ public class AuthController {
                     .fullName(user.getFullName() != null ? user.getFullName() : "")
                     .phone(user.getPhone() != null ? user.getPhone() : "")
                     .address(user.getAddress() != null ? user.getAddress() : "")
+                    .status(user.getStatus())
                     .build();
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
@@ -109,6 +111,7 @@ public class AuthController {
                     .fullName(user.getFullName() != null ? user.getFullName() : "")
                     .phone(user.getPhone() != null ? user.getPhone() : "")
                     .address(user.getAddress() != null ? user.getAddress() : "")
+                    .status(user.getStatus())
                     .build();
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
@@ -117,4 +120,36 @@ public class AuthController {
             return ResponseEntity.internalServerError().body("An error occurred updating profile.");
         }
     }
+
+    @PutMapping("/users")
+    public ResponseEntity<?> updateUserAdmin(@RequestBody UserUpdateRequest request) {
+        try {
+            com.ptit.ecommerce.userservice.model.User user = authService.updateUserAdmin(request.getId(), request.getRole(), request.getStatus());
+            com.ptit.ecommerce.userservice.dto.UserResponse response = com.ptit.ecommerce.userservice.dto.UserResponse.builder()
+                    .id(user.getId())
+                    .username(user.getUsername())
+                    .email(user.getEmail())
+                    .role(user.getRole())
+                    .fullName(user.getFullName() != null ? user.getFullName() : "")
+                    .phone(user.getPhone() != null ? user.getPhone() : "")
+                    .address(user.getAddress() != null ? user.getAddress() : "")
+                    .status(user.getStatus())
+                    .build();
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("An error occurred updating user under admin permissions.");
+        }
+    }
+
+    @lombok.Data
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    public static class UserUpdateRequest {
+        private Long id;
+        private String role;
+        private String status;
+    }
 }
+

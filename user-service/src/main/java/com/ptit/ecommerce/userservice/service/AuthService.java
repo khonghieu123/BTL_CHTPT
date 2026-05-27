@@ -134,4 +134,26 @@ public class AuthService {
 
         return userRepository.save(user);
     }
+
+    public User updateUserAdmin(Long userId, String role, String status) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
+
+        if (role != null) {
+            // Support front-end sending simple role (ADMIN/CUSTOMER) or raw role (ROLE_ADMIN/ROLE_USER)
+            if (role.equalsIgnoreCase("ADMIN")) {
+                user.setRole("ROLE_ADMIN");
+            } else if (role.equalsIgnoreCase("CUSTOMER")) {
+                user.setRole("ROLE_USER");
+            } else {
+                user.setRole(role);
+            }
+        }
+        if (status != null) {
+            user.setStatus(status);
+        }
+
+        return userRepository.save(user);
+    }
 }
+

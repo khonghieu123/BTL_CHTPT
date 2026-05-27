@@ -48,7 +48,7 @@ export default function AdminUsersPage() {
   const loadUsers = async () => {
     try {
       setIsLoading(true);
-      const data = await apiCall("get", "/users");
+      const data = await apiCall("get", "/auth/users");
       setUsers(data);
       setFilteredUsers(data);
     } catch (err) {
@@ -82,7 +82,7 @@ export default function AdminUsersPage() {
   const handleToggleStatus = async (user: User) => {
     const nextStatus = user.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE";
     try {
-      await apiCall("put", "/users", { id: user.id, status: nextStatus });
+      await apiCall("put", "/auth/users", { id: user.id, status: nextStatus });
       toast.info(`Cập nhật tài khoản ${user.username} thành: ${nextStatus === "ACTIVE" ? "Mở khóa" : "Khóa"}`);
       loadUsers();
     } catch (err) {
@@ -94,13 +94,14 @@ export default function AdminUsersPage() {
   const handleToggleRole = async (user: User) => {
     const nextRole = user.role === "ADMIN" ? "CUSTOMER" : "ADMIN";
     try {
-      await apiCall("put", "/users", { id: user.id, role: nextRole });
+      await apiCall("put", "/auth/users", { id: user.id, role: nextRole });
       toast.success(`Đã chuyển đổi vai trò tài khoản ${user.username} thành: ${nextRole}`);
       loadUsers();
     } catch (err) {
       toast.error("Lỗi thay đổi vai trò tài khoản");
     }
   };
+
 
   if (isAuthorized === false) {
     return (
